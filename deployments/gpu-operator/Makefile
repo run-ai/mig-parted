@@ -53,7 +53,7 @@ $(BUILD_TARGETS): build-%:
 		--build-arg VERSION=$(VERSION) \
 		--build-arg GOLANG_VERSION=$(GOLANG_VERSION) \
 		--build-arg BASE_IMAGE=$(CUDA_BASE_IMAGE)-$(*) \
-		--tag $(IMAGE):$(VERSION)-$(*) \
+		--tag $(IMAGE):$(VERSION) \
 		--file Dockerfile \
 		$(BUILD_DIR)
 	$(DOCKER) push $(IMAGE):$(VERSION)-$(*)
