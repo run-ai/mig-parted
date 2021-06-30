@@ -1,0 +1,60 @@
+version: 2.1
+jobs:      
+  deploy-staging:
+    working_directory: ~/deployments/gpu-operator
+    docker:
+    - image: google/cloud-sdk:276.0.0
+    steps:
+    - checkout
+    - docker_login:
+        gcloud_auth_var_name: STAGING_GCLOUD_SERVICE_JSON_CONTENT
+    - run:
+        name: build
+        command: make build
+        environment:
+          ENVRIONMENT: staging
+          VERSION: <<pipeline.git.revision>>
+    - run:
+        name: deploy
+        command: echo x
+        environment:
+          ENVRIONMENT: staging
+          VERSION: <<pipeline.git.revision>>
+  deploy-production:
+    working_directory: ~/deployments/gpu-operator
+    docker:
+    - image: google/cloud-sdk:276.0.0
+    steps:
+    - checkout
+    - run:
+        name: "Extract gcloud private key to file"
+        command: echo "$PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT" | base64 -d > ./my.json
+    - run:
+        name: build
+        command: make build
+        environment:
+          ENVRIONMENT: prod
+          VERSION: <<pipeline.git.tag>>
+    - run:
+        name: deploy
+        command: echo x
+        environment:
+          ENVRIONMENT: prod
+          VERSION: <<pipeline.git.tag>>
+
+workflows:
+  version: 2  
+  deploy:
+    jobs:
+      - deploy-staging:
+          filters:
+            branches:
+              only:
+                - master
+      - deploy-production:
+          filters:
+                tags:
+                  only: /^v.*/
+                branches:
+                  ignore: /.*/
+

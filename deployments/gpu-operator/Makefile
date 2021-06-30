@@ -20,8 +20,11 @@ CUDA_BASE_IMAGE ?= nvcr.io/nvidia/cuda:11.3.0-base
 BUILD_DIR ?= ../..
 
 ifeq ($(IMAGE),)
-REGISTRY ?= nvcr.io/nvidia
-IMAGE := $(REGISTRY)/k8s-mig-manager
+ifeq ($(ENVRIONMENT),)
+ENVIRONMENT=lab
+endif
+REGISTRY ?= gcr.io/run-ai-$(ENVIRONMENT)
+IMAGE := $(REGISTRY)/mig-parted
 endif
 
 ##### Public rules #####
@@ -53,3 +56,4 @@ $(BUILD_TARGETS): build-%:
 		--tag $(IMAGE):$(VERSION)-$(*) \
 		--file Dockerfile \
 		$(BUILD_DIR)
+	$(DOCKER) push $(IMAGE):$(VERSION)-$(*)
