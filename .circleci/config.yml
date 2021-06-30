@@ -42,9 +42,8 @@ jobs:
     steps:
     - checkout
     - setup_remote_docker
-    - run:
-        name: "Extract gcloud private key to file"
-        command: echo "$PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT" | base64 -d > ./my.json
+    - docker_login:
+        gcloud_auth_var_name: PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT
     - run:
         name: Build And Deploy
         command: cd deployments/gpu-operator && make
