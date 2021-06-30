@@ -1,4 +1,18 @@
 version: 2.1
+commands:
+  docker_login:
+    parameters:
+      gcloud_auth_var_name:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: extract auth json to file and login
+          command: |
+            GOOGLE_APPLICATION_CREDENTIALS="/tmp/gac-$(date +%s).json"
+            echo "${<<parameters.gcloud_auth_var_name>>}" | base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
+            cat $GOOGLE_APPLICATION_CREDENTIALS | docker login -u _json_key --password-stdin https://gcr.io
+            rm ${GOOGLE_APPLICATION_CREDENTIALS}
 jobs:      
   deploy-staging:
     working_directory: ~/deployments/gpu-operator
