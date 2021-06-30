@@ -54,4 +54,4 @@ $(BUILD_TARGETS): build-%:
 		--tag $(IMAGE):$(VERSION) \
 		--file Dockerfile \
 		$(BUILD_DIR)
-	$(DOCKER) push $(IMAGE):$(VERSION)-$(*)
+	$(DOCKER) push $(IMAGE):$(VERSION)
