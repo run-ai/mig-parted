@@ -31,7 +31,7 @@ jobs:
           VERSION: <<pipeline.git.revision>>
     - run:
         name: deploy
-        command: ls -l
+        command: pwd
         environment:
           ENVRIONMENT: staging
           VERSION: <<pipeline.git.revision>>
