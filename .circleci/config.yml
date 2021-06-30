@@ -17,7 +17,7 @@ jobs:
   deploy-staging:
     working_directory: ~/deployments/gpu-operator
     docker:
-    - image: google/cloud-sdk:276.0.0
+    - image: circleci/golang:1.15
     steps:
     - checkout
     - setup_remote_docker
@@ -38,9 +38,10 @@ jobs:
   deploy-production:
     working_directory: ~/deployments/gpu-operator
     docker:
-    - image: google/cloud-sdk:276.0.0
+    - image: circleci/golang:1.15
     steps:
     - checkout
+    - setup_remote_docker
     - run:
         name: "Extract gcloud private key to file"
         command: echo "$PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT" | base64 -d > ./my.json
