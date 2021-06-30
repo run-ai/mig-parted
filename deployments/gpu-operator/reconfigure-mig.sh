@@ -4,7 +4,6 @@ WITH_REBOOT="false"
 HOST_ROOT_MOUNT="/host"
 NODE_NAME=""
 MIG_CONFIG_FILE=""
-SELECTED_MIG_CONFIG=""
 
 NDP_ORIGINAL_STATE="true"
 GFD_ORIGINAL_STATE="true"
@@ -19,12 +18,11 @@ function usage() {
   echo "    -h                   Display this help message"
   echo "    -r                   Automatically reboot the node if changing the MIG mode fails for any reason"
   echo "    -n <node>            The kubernetes node to change the MIG configuration on"
-  echo "    -f <config-file>     The mig-parted configuration file"
-  echo "    -c <selected-config> The selected mig-parted configuration to apply to the node"
+  echo "    -f <config>          The mig-parted configuration section"
   echo "    -m <host-root-mount> Target path where host root directory is mounted"
 }
 
-while getopts "hrn:f:c:m:" opt; do
+while getopts "hrn:f:m:" opt; do
   case ${opt} in
     h ) # process option h
       usage; exit 0
@@ -37,9 +35,6 @@ while getopts "hrn:f:c:m:" opt; do
       ;;
     f ) # process option f
       MIG_CONFIG_FILE=${OPTARG}
-      ;;
-    c ) # process option c
-      SELECTED_MIG_CONFIG=${OPTARG}
       ;;
     m ) # process option m
       HOST_ROOT_MOUNT=${OPTARG}
@@ -55,10 +50,6 @@ if [ "${NODE_NAME}" = "" ]; then
 fi
 if [ "${MIG_CONFIG_FILE}" = "" ]; then
   echo "Error: missing -f <config-file> flag"
-  usage; exit 1
-fi
-if [ "${SELECTED_MIG_CONFIG}" = "" ]; then
-  echo "Error: missing -c <selected-config> flag"
   usage; exit 1
 fi
 
@@ -117,7 +108,11 @@ if [ "${?}" != "0" ]; then
 fi
 
 echo "Asserting that the requested configuration is present in the configuration file"
-nvidia-mig-parted assert --valid-config -f ${MIG_CONFIG_FILE} -c ${SELECTED_MIG_CONFIG}
+
+cat << EOF | nvidia-mig-parted assert --valid-config -f -
+${MIG_CONFIG_FILE}
+EOF
+
 if [ "${?}" != "0" ]; then
 	echo "Unable to validate the selected MIG configuration"
 	exit_failed
@@ -133,14 +128,22 @@ echo "Current value of 'nvidia.com/mig.config.state=${STATE}'"
 
 echo "Checking if the MIG mode setting in the selected config is currently applied or not"
 echo "If the state is 'rebooting', we expect this to always return true"
-nvidia-mig-parted assert --mode-only -f ${MIG_CONFIG_FILE} -c ${SELECTED_MIG_CONFIG}
+
+cat << EOF | nvidia-mig-parted assert --mode-only -f -
+${MIG_CONFIG_FILE}
+EOF
+
 if [ "${?}" != "0" ] && [ "${STATE}" == "rebooting" ]; then
 	echo "MIG mode change did not take effect after rebooting"
 	exit_failed
 fi
 
 echo "Checking if the selected MIG config is currently applied or not"
-nvidia-mig-parted assert -f ${MIG_CONFIG_FILE} -c ${SELECTED_MIG_CONFIG}
+
+cat << EOF | nvidia-mig-parted assert -f -
+${MIG_CONFIG_FILE}
+EOF
+
 if [ "${?}" = "0" ]; then
 	exit_success
 fi
@@ -188,7 +191,11 @@ kubectl wait --for=delete pod \
 
 echo "Applying the MIG mode change from the selected config to the node"
 echo "If the -r option was passed, the node will be automatically rebooted if this is not successful"
-nvidia-mig-parted -d apply --mode-only -f ${MIG_CONFIG_FILE} -c ${SELECTED_MIG_CONFIG}
+
+cat << EOF | nvidia-mig-parted -d apply --mode-only -f -
+${MIG_CONFIG_FILE}
+EOF
+
 if [ "${?}" != "0" ] && [ "${WITH_REBOOT}" = "true" ]; then
 	echo "Changing the 'nvidia.com/mig.config.state' node label to 'rebooting'"
 	kubectl label --overwrite  \
@@ -204,7 +211,11 @@ if [ "${?}" != "0" ] && [ "${WITH_REBOOT}" = "true" ]; then
 fi
 
 echo "Applying the selected MIG config to the node"
-nvidia-mig-parted -d apply -f ${MIG_CONFIG_FILE} -c ${SELECTED_MIG_CONFIG}
+
+cat << EOF | nvidia-mig-parted -d apply -f -
+${MIG_CONFIG_FILE}
+EOF
+
 if [ "${?}" != "0" ]; then
 	exit_failed
 fi

@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	ResourceNodes  = "nodes"
-	MigConfigLabel = "nvidia.com/mig.config"
+	ResourceNodes       = "nodes"
+	MigConfigAnnotation = "nvidia.com/mig.config"
 
 	DefaultReconfigureScript = "/usr/bin/reconfigure-mig.sh"
 	DefaultHostRootMount     = "/host"
@@ -98,7 +98,7 @@ func main() {
 			Name:        "node-name",
 			Aliases:     []string{"n"},
 			Value:       "",
-			Usage:       "the name of the node to watch for label changes on",
+			Usage:       "the name of the node to watch for annotation changes on",
 			Destination: &nodeNameFlag,
 			EnvVars:     []string{"NODE_NAME"},
 		},
@@ -171,7 +171,7 @@ func start(c *cli.Context) error {
 	defer close(stop)
 
 	for {
-		log.Infof("Waiting for change to '%s' label", MigConfigLabel)
+		log.Infof("Waiting for change to '%s' annotation", MigConfigAnnotation)
 		value := migConfig.Get()
 		log.Infof("Updating to MIG config: %s", value)
 		err := runScript(value)
@@ -186,8 +186,7 @@ func start(c *cli.Context) error {
 func runScript(migConfigValue string) error {
 	args := []string{
 		"-n", nodeNameFlag,
-		"-f", configFileFlag,
-		"-c", migConfigValue,
+		"-f", migConfigValue,
 		"-m", hostRootMountFlag,
 	}
 	if withRebootFlag {
@@ -211,13 +210,13 @@ func ContinuouslySyncMigConfigChanges(clientset *kubernetes.Clientset, migConfig
 		listWatch, &v1.Node{}, 0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				migConfig.Set(obj.(*v1.Node).Labels[MigConfigLabel])
+				migConfig.Set(obj.(*v1.Node).Annotations[MigConfigAnnotation])
 			},
 			UpdateFunc: func(oldObj, newObj interface{}) {
-				oldLabel := oldObj.(*v1.Node).Labels[MigConfigLabel]
-				newLabel := newObj.(*v1.Node).Labels[MigConfigLabel]
-				if oldLabel != newLabel {
-					migConfig.Set(newLabel)
+				oldAnnotation := oldObj.(*v1.Node).Annotations[MigConfigAnnotation]
+				newAnnotation := newObj.(*v1.Node).Annotations[MigConfigAnnotation]
+				if oldAnnotation != newAnnotation {
+					migConfig.Set(newAnnotation)
 				}
 			},
 		},
