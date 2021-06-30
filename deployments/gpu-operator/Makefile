@@ -15,14 +15,12 @@
 VERSION ?= v0.1.1
 
 DOCKER ?= docker
+ENVIRONMENT?=lab
 GOLANG_VERSION ?= 1.15
 CUDA_BASE_IMAGE ?= nvcr.io/nvidia/cuda:11.3.0-base
 BUILD_DIR ?= ../..
 
 ifeq ($(IMAGE),)
-ifeq ($(ENVRIONMENT),)
-ENVIRONMENT=lab
-endif
 REGISTRY ?= gcr.io/run-ai-$(ENVIRONMENT)
 IMAGE := $(REGISTRY)/mig-parted
 endif

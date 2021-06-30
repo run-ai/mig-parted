@@ -27,7 +27,7 @@ jobs:
         name: Build And Deploy
         command: cd deployments/gpu-operator && make
         environment:
-          ENVRIONMENT: staging
+          ENVIRONMENT: staging
           VERSION: <<pipeline.git.revision>>
     - run:
         name: deploy
@@ -49,7 +49,7 @@ jobs:
         name: Build And Deploy
         command: cd deployments/gpu-operator && make
         environment:
-          ENVRIONMENT: prod
+          ENVIRONMENT: prod
           VERSION: <<pipeline.git.tag>>
     - run:
         name: deploy
