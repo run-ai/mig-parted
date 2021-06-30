@@ -15,7 +15,7 @@ commands:
             rm ${GOOGLE_APPLICATION_CREDENTIALS}
 jobs:      
   deploy-staging:
-    working_directory: ~/deployments/gpu-operator
+    working_directory: ~/runai
     docker:
     - image: circleci/golang:1.15
     steps:
@@ -25,7 +25,7 @@ jobs:
         gcloud_auth_var_name: STAGING_GCLOUD_SERVICE_JSON_CONTENT
     - run:
         name: Build And Deploy
-        command: make
+        command: cd deployments/gpu-operator && make
         environment:
           ENVRIONMENT: staging
           VERSION: <<pipeline.git.revision>>
@@ -36,7 +36,7 @@ jobs:
           ENVRIONMENT: staging
           VERSION: <<pipeline.git.revision>>
   deploy-production:
-    working_directory: ~/deployments/gpu-operator
+    working_directory: ~/runai
     docker:
     - image: circleci/golang:1.15
     steps:
@@ -47,7 +47,7 @@ jobs:
         command: echo "$PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT" | base64 -d > ./my.json
     - run:
         name: Build And Deploy
-        command: make
+        command: cd deployments/gpu-operator && make
         environment:
           ENVRIONMENT: prod
           VERSION: <<pipeline.git.tag>>
