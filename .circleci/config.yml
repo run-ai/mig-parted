@@ -20,6 +20,7 @@ jobs:
     - image: google/cloud-sdk:276.0.0
     steps:
     - checkout
+    - setup_remote_docker
     - docker_login:
         gcloud_auth_var_name: STAGING_GCLOUD_SERVICE_JSON_CONTENT
     - run:
