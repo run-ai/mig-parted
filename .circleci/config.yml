@@ -24,8 +24,8 @@ jobs:
     - docker_login:
         gcloud_auth_var_name: STAGING_GCLOUD_SERVICE_JSON_CONTENT
     - run:
-        name: build
-        command: make build
+        name: Build And Deploy
+        command: make
         environment:
           ENVRIONMENT: staging
           VERSION: <<pipeline.git.revision>>
@@ -46,8 +46,8 @@ jobs:
         name: "Extract gcloud private key to file"
         command: echo "$PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT" | base64 -d > ./my.json
     - run:
-        name: build
-        command: make build
+        name: Build And Deploy
+        command: make
         environment:
           ENVRIONMENT: prod
           VERSION: <<pipeline.git.tag>>
