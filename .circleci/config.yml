@@ -31,7 +31,7 @@ jobs:
           VERSION: <<pipeline.git.revision>>
     - run:
         name: deploy
-        command: echo x
+        command: ls -l
         environment:
           ENVRIONMENT: staging
           VERSION: <<pipeline.git.revision>>
