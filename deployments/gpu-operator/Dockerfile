@@ -21,6 +21,7 @@ COPY . .
 RUN go build -o /artifacts/nvidia-mig-parted ./cmd
 RUN go build -o /artifacts/nvidia-mig-manager ./deployments/gpu-operator/
 RUN cp ./deployments/gpu-operator/reconfigure-mig.sh /artifacts/reconfigure-mig.sh
+RUN cp ./deployments/gpu-operator/mig-mapping.sh /artifacts/mig-mapping.sh
 
 RUN curl -o /artifacts/kubectl -L "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl";
 RUN chmod a+x /artifacts/kubectl
@@ -31,7 +32,10 @@ COPY ./LICENSE ./licenses/LICENSE
 COPY --from=build /artifacts/nvidia-mig-parted  /usr/bin/nvidia-mig-parted
 COPY --from=build /artifacts/nvidia-mig-manager /usr/bin/nvidia-mig-manager
 COPY --from=build /artifacts/reconfigure-mig.sh /usr/bin/reconfigure-mig.sh
+COPY --from=build /artifacts/mig-mapping.sh /usr/bin/mig-mapping.sh
 COPY --from=build /artifacts/kubectl            /usr/bin/kubectl
+
+RUN chmod +x /usr/bin/mig-mapping.sh
 
 ENV NVIDIA_DISABLE_REQUIRE="true"
 ENV NVIDIA_VISIBLE_DEVICES=all
