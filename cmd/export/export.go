@@ -22,7 +22,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/NVIDIA/mig-parted/api/spec/v1"
 	"github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 
@@ -44,6 +43,7 @@ const (
 type Flags struct {
 	OutputFormat string
 	ConfigLabel  string
+	Placements   bool
 }
 
 type Context struct {
@@ -81,6 +81,14 @@ func BuildCommand() *cli.Command {
 			Value:       DefaultConfigLabel,
 			EnvVars:     []string{"MIG_PARTED_CONFIG_LABEL"},
 		},
+		&cli.BoolFlag{
+			Name:        "placements",
+			Aliases:     []string{"p"},
+			Usage:       "Output the actual placements of MIG devices",
+			Destination: &exportFlags.Placements,
+			Value:       false,
+			EnvVars:     []string{"MIG_PARTED_SHOW_PLACEMENTS"},
+		},
 	}
 
 	return &export
@@ -96,6 +104,10 @@ func exportWrapper(c *cli.Context, f *Flags) error {
 	context := Context{
 		Context: c,
 		Flags:   f,
+	}
+
+	if f.Placements {
+		return ExportPlacements(&context, f)
 	}
 
 	spec, err := ExportMigConfigs(&context)
@@ -121,7 +133,7 @@ func CheckFlags(f *Flags) error {
 	return nil
 }
 
-func WriteOutput(w io.Writer, spec *v1.Spec, f *Flags) error {
+func WriteOutput(w io.Writer, spec interface{}, f *Flags) error {
 	switch f.OutputFormat {
 	case YAMLFormat:
 		output, err := yaml.Marshal(spec)
@@ -136,5 +148,18 @@ func WriteOutput(w io.Writer, spec *v1.Spec, f *Flags) error {
 		}
 		w.Write(output)
 	}
+	return nil
+}
+
+func ExportPlacements(c *Context, f *Flags) error {
+	spec, err := ExportMigPlacements(c)
+	if err != nil {
+		return err
+	}
+	err = WriteOutput(os.Stdout, spec, f)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

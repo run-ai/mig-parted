@@ -29,6 +29,7 @@ type Manager interface {
 	GetMigConfig(gpu int) (types.MigConfig, error)
 	SetMigConfig(gpu int, config types.MigConfig) error
 	ClearAndGetInstancesToCreate(gpu int, desiredConfig []types.MigProfile) ([]types.MigProfile, error)
+	GetMigPlacements() (map[int]map[int]string, error)
 }
 
 type nvmlMigConfigManager struct {
@@ -191,7 +192,7 @@ func (m *nvmlMigConfigManager) SetMigConfig(gpu int, config types.MigConfig) err
 				return fmt.Errorf("error getting Compute instance profile info for '%v': %v", mdt, ret)
 			}
 
-			_, ret = gi.CreateComputeInstance(&ciProfileInfo)
+			ci, ret := gi.CreateComputeInstance(&ciProfileInfo)
 			if ret.Value() != nvml.SUCCESS {
 				return fmt.Errorf("error creating Compute instance for '%v': %v", mdt, ret)
 			}
@@ -200,6 +201,12 @@ func (m *nvmlMigConfigManager) SetMigConfig(gpu int, config types.MigConfig) err
 			if mdt != valid {
 				return fmt.Errorf("unsupported MIG Device specified %v, expected %v instead", mdt, valid)
 			}
+
+			info, _ := gi.GetInfo()
+			uuid, _ := info.Device.GetUUID()
+			cinfo, _ := ci.GetInfo()
+			fmt.Printf("EREZ DEBUG:: gi info: id: %d, ProfileId: %d, Placement: %v, uuid: %s\n", info.Id, info.ProfileId, info.Placement, uuid)
+			fmt.Printf("EREZ DEBUG:: ci info: id: %d, ProfileId: %d\n", cinfo.Id, cinfo.ProfileId)
 		}
 
 		return nil
@@ -210,6 +217,25 @@ func (m *nvmlMigConfigManager) SetMigConfig(gpu int, config types.MigConfig) err
 			log.Errorf("Error clearing MIG config on GPU %d, erroneous devices may persist", gpu)
 		}
 		return fmt.Errorf("error attempting multiple config orderings: %v", err)
+	}
+
+	maxMigDeviceCount, r := device.GetMaxMigDeviceCount()
+	if r.Value() != nvml.SUCCESS {
+		fmt.Println("EREZ DEBUG:: failed to get max mig devices")
+		return nil
+	}
+	for ind := 0; ind < maxMigDeviceCount; ind++ {
+		migDevice, r := device.GetMigDeviceHandleByIndex(ind)
+		if r.Value() != nvml.SUCCESS {
+			fmt.Printf("EREZ DEBUG:: failed to get mig device with index: %d. String: %s, value: %v\n", ind, r.String(), r.Value())
+			continue
+		}
+		uuid, r := migDevice.GetUUID()
+		if r.Value() != nvml.SUCCESS {
+			fmt.Printf("EREZ DEBUG:: Failed to get UUID for mig device with index: %d. String: %s, value: %v\n", ind, r.String(), r.Value())
+			continue
+		}
+		fmt.Printf("EREZ DEBUG:: MIG ID: %d, UUID: %s\n", ind, uuid)
 	}
 
 	return nil
@@ -366,4 +392,60 @@ func iteratePermutationsUntilSuccess(config types.MigConfig, f func([]types.MigP
 	}
 
 	return iterate(config.Flatten(), f, 0)
+}
+
+func (m *nvmlMigConfigManager) GetMigPlacements() (map[int]map[int]string, error) {
+	ret := m.nvml.Init()
+	if ret.Value() != nvml.SUCCESS {
+		return nil, fmt.Errorf("error initializing NVML: %v", ret)
+	}
+	defer tryNvmlShutdown(m.nvml)
+
+	deviceCount, ret := m.nvml.DeviceGetCount()
+	if ret.Value() != nvml.SUCCESS {
+		return nil, fmt.Errorf("Failed to read device count: %s", ret.String())
+	}
+	migPlacements := make(map[int]map[int]string)
+
+	for gpuIndex := 0; gpuIndex < deviceCount; gpuIndex++ {
+		gpuDevice, ret := m.nvml.DeviceGetHandleByIndex(gpuIndex)
+		if ret.Value() != nvml.SUCCESS {
+			return nil, fmt.Errorf("Failed to get device index %d: %s", gpuIndex, ret.String())
+		}
+		enabled, _, ret := gpuDevice.GetMigMode()
+		if ret.Value() != nvml.SUCCESS || enabled != nvml.DEVICE_MIG_ENABLE {
+			continue
+		}
+		maxMigDevices, ret := gpuDevice.GetMaxMigDeviceCount()
+		if ret.Value() != nvml.SUCCESS {
+			return nil, fmt.Errorf("Failed to read max mig devices: %s", ret.String())
+		}
+
+		migPlacements[gpuIndex] = make(map[int]string)
+
+		for migIndex := 0; migIndex < maxMigDevices; migIndex++ {
+			migDevice, ret := gpuDevice.GetMigDeviceHandleByIndex(migIndex)
+			if ret.Value() != nvml.SUCCESS {
+				break
+			}
+			uuid, ret := migDevice.GetUUID()
+			if ret.Value() != nvml.SUCCESS {
+				return nil, fmt.Errorf("Failed to read mig device UUID: gpu: %d, mig index: %d: %s", gpuIndex, migIndex, ret.String())
+			}
+			gpuInstanceId, ret := migDevice.GetGpuInstanceId()
+			if ret.Value() != nvml.SUCCESS {
+				return nil, fmt.Errorf("Failed to read mig device gpu instance id: gpu: %d, mig index: %d: %s", gpuIndex, migIndex, ret.String())
+			}
+			gpuInstance, ret := gpuDevice.GetGpuInstanceById(gpuInstanceId)
+			if ret.Value() != nvml.SUCCESS {
+				return nil, fmt.Errorf("Failed to get gpu instance with id %d for mig device %d on gpu %d: %s", gpuInstanceId, migIndex, gpuIndex, ret.String())
+			}
+			info, ret := gpuInstance.GetInfo()
+			if ret.Value() != nvml.SUCCESS {
+				return nil, fmt.Errorf("Failed to get gpu instance info: gpu instance id: %d, mig device %d on gpu index: %d: %s", gpuInstanceId, migIndex, gpuIndex, ret.String())
+			}
+			migPlacements[gpuIndex][int(info.Placement.Start)] = uuid
+		}
+	}
+	return migPlacements, nil
 }
