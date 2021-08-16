@@ -2,9 +2,23 @@ package export
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/NVIDIA/mig-parted/cmd/util"
 )
+
+func ExportPlacements(c *Context, f *Flags) error {
+	spec, err := ExportMigPlacements(c)
+	if err != nil {
+		return err
+	}
+	err = WriteOutput(os.Stdout, spec, f)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func ExportMigPlacements(c *Context) (map[int]map[int]string, error) {
 	nvidiaModuleLoaded, err := util.IsNvidiaModuleLoaded()
