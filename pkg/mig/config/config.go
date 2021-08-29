@@ -201,7 +201,6 @@ func (m *nvmlMigConfigManager) SetMigConfig(gpu int, config types.MigConfig) err
 			if mdt != valid {
 				return fmt.Errorf("unsupported MIG Device specified %v, expected %v instead", mdt, valid)
 			}
-
 		}
 
 		return nil

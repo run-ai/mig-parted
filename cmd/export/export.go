@@ -107,7 +107,7 @@ func exportWrapper(c *cli.Context, f *Flags) error {
 	}
 
 	if f.Placements {
-		return ExportPlacements(&context, f)
+		return exportPlacements(f)
 	}
 
 	spec, err := ExportMigConfigs(&context)

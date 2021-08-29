@@ -7,8 +7,8 @@ import (
 	"github.com/NVIDIA/mig-parted/cmd/util"
 )
 
-func ExportPlacements(c *Context, f *Flags) error {
-	spec, err := ExportMigPlacements(c)
+func exportPlacements(f *Flags) error {
+	spec, err := exportMigPlacements()
 	if err != nil {
 		return err
 	}
@@ -20,7 +20,7 @@ func ExportPlacements(c *Context, f *Flags) error {
 	return nil
 }
 
-func ExportMigPlacements(c *Context) (map[int]map[int]string, error) {
+func exportMigPlacements() (map[int]map[int]string, error) {
 	nvidiaModuleLoaded, err := util.IsNvidiaModuleLoaded()
 	if err != nil {
 		return nil, fmt.Errorf("error checking if nvidia module loaded: %v", err)
