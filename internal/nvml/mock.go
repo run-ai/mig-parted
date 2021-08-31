@@ -23,6 +23,9 @@ type MockA100Device struct {
 	MigMode            int
 	GpuInstances       map[*MockA100GpuInstance]struct{}
 	GpuInstanceCounter uint32
+	Uuid               string
+	MaxMigDevices      int
+	InstanceId         int
 }
 type MockA100GpuInstance struct {
 	Info                   GpuInstanceInfo
@@ -296,6 +299,9 @@ func NewMockA100Device() Device {
 	return &MockA100Device{
 		GpuInstances:       make(map[*MockA100GpuInstance]struct{}),
 		GpuInstanceCounter: 0,
+		Uuid:               "GPU-abcd",
+		MaxMigDevices:      7,
+		InstanceId:         0,
 	}
 }
 

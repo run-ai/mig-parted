@@ -12,17 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MODULE := github.com/NVIDIA/mig-parted
+MODULE := github.com/run-ai/mig-parted
 
 DOCKER ?= docker
 
 GOLANG_VERSION := 1.15
 
 ifeq ($(IMAGE),)
-REGISTRY ?= nvidia
-IMAGE=$(REGISTRY)/mig-parted
+REGISTRY ?= gcr.io/run-ai-
+STAGE ?= lab
+IMAGE=$(REGISTRY)$(STAGE)/mig-parted
 endif
-IMAGE_TAG ?= $(GOLANG_VERSION)-devel
+GIT_TAG ?= $(shell git tag --points-at=HEAD | head -1)
+IMAGE_TAG ?= $(shell git rev-parse --short HEAD)-devel
+VERSION ?= IMAGE_TAG
 BUILDIMAGE ?= $(IMAGE):$(IMAGE_TAG)
 
 TARGETS := binary build all check fmt assert-fmt lint vet test

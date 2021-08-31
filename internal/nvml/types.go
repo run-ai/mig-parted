@@ -34,6 +34,11 @@ type Device interface {
 	GetGpuInstanceProfileInfo(Profile int) (GpuInstanceProfileInfo, Return)
 	CreateGpuInstance(Info *GpuInstanceProfileInfo) (GpuInstance, Return)
 	GetGpuInstances(Info *GpuInstanceProfileInfo) ([]GpuInstance, Return)
+	GetMaxMigDeviceCount() (int, Return)
+	GetMigDeviceHandleByIndex(Index int) (Device, Return)
+	GetUUID() (string, Return)
+	GetGpuInstanceId() (int, Return)
+	GetGpuInstanceById(Id int) (GpuInstance, Return)
 }
 
 type GpuInstance interface {

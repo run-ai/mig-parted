@@ -29,6 +29,7 @@ type Manager interface {
 	GetMigConfig(gpu int) (types.MigConfig, error)
 	SetMigConfig(gpu int, config types.MigConfig) error
 	ClearAndGetInstancesToCreate(gpu int, desiredConfig []types.MigProfile) ([]types.MigProfile, error)
+	GetMigPlacements() (map[int]map[int]string, error)
 }
 
 type nvmlMigConfigManager struct {

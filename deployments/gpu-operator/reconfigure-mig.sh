@@ -71,7 +71,7 @@ function __set_state_and_exit() {
 }	
 
 function exit_success() {
-  MIG_DEVICES_UUID_MAP=$(/usr/bin/mig-mapping.sh | base64 -w 0)
+  MIG_DEVICES_UUID_MAP=$(nvidia-mig-parted export --placements -o json | base64 -w 0)
   echo ${MIG_DEVICES_UUID_MAP}
   kubectl annotate node ${NODE_NAME} --overwrite run.ai/mig-mapping=${MIG_DEVICES_UUID_MAP}
 	__set_state_and_exit "success" 0
