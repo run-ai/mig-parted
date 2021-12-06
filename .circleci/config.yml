@@ -88,6 +88,8 @@ workflows:
           filters:
                 tags:
                   only: /^v.*/
-                # branches: todo
+                branches:
+                  only:
+                    - gal/RUN-2662-add-tag-and-trigger-operator-update-version
                   # ignore: /.*/
 
