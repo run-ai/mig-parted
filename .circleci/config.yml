@@ -74,12 +74,6 @@ jobs:
           ENVIRONMENT: prod
           VERSION: <<pipeline.git.tag>>
     - run:
-        name: deploy
-        command: echo x
-        environment:
-          ENVRIONMENT: prod
-          VERSION: <<pipeline.git.tag>>
-    - run:
         name: "Docker build and push"
         command: |
           TAG=${CIRCLE_TAG/v/''}
