@@ -22,7 +22,6 @@ commands:
       - run:
           name: Git Commands
           command: |
-            echo *** update_version_in_runai_operator
             export TAG=${CIRCLE_TAG/v/''}
             echo "Updating mig-parted new version number $TAG in runai-operator..."
             cd ~
@@ -31,9 +30,12 @@ commands:
             git config --global user.email "circleci@run.ai"
             git clone https://github.com/run-ai/runai-operator.git
             cd runai-operator/subcharts/mig-parted
-            echo ****** TAG: $TAG
-            echo *** values.yaml
+            echo $TAG
+            yq e -i '.image.tag = strenv(TAG)' values.yaml
             cat values.yaml
+            git add values.yaml
+            git commit -m "updated mig-parted production version to $TAG [skip ci]"
+            git push
 jobs:      
   deploy-staging:
     working_directory: ~/runai
@@ -66,7 +68,7 @@ jobs:
     - docker_login:
         gcloud_auth_var_name: PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT
     - run:
-        name: Build And Deploy
+        name: Build And Push to google cloud production registry
         command: cd deployments/gpu-operator && make
         environment:
           ENVIRONMENT: prod
@@ -86,6 +88,6 @@ workflows:
           filters:
                 tags:
                   only: /^v.*/
-                branches:
-                  ignore: /.*/
+                # branches: todo
+                  # ignore: /.*/
 
