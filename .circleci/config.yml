@@ -89,7 +89,5 @@ workflows:
                 tags:
                   only: /^v.*/
                 branches:
-                  only:
-                    - gal/RUN-2662-add-tag-and-trigger-operator-update-version
-                  # ignore: /.*/
+                  ignore: /.*/
 
