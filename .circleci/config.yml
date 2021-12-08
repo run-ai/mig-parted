@@ -47,17 +47,18 @@ jobs:
     - docker_login:
         gcloud_auth_var_name: STAGING_GCLOUD_SERVICE_JSON_CONTENT
     - run:
-        name: Build And Deploy
+        name: Build And Push to google cloud staging registry with revision tag
         command: cd deployments/gpu-operator && make
         environment:
           ENVIRONMENT: staging
           VERSION: <<pipeline.git.revision>>
     - run:
-        name: deploy
-        command: pwd
+        name: Build And Push to google cloud staging registry with 'latest' tag
+        command: cd deployments/gpu-operator && make
         environment:
-          ENVRIONMENT: staging
-          VERSION: <<pipeline.git.revision>>
+          ENVIRONMENT: staging
+          VERSION: latest
+
   deploy-production:
     working_directory: ~/runai
     docker:
