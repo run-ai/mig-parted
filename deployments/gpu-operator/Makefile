@@ -55,3 +55,8 @@ $(BUILD_TARGETS): build-%:
 		--file Dockerfile \
 		$(BUILD_DIR)
 	$(DOCKER) push $(IMAGE):$(VERSION)
+
+
+push-to-tag:
+	$(DOCKER) tag $(IMAGE):$(OLD_TAG) $(IMAGE):$(NEW_TAG)
+	$(DOCKER) push $(IMAGE):$(NEW_TAG)

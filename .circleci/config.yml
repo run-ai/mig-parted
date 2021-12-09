@@ -13,6 +13,28 @@ commands:
             echo "${<<parameters.gcloud_auth_var_name>>}" | base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
             cat $GOOGLE_APPLICATION_CREDENTIALS | docker login -u _json_key --password-stdin https://gcr.io
             rm ${GOOGLE_APPLICATION_CREDENTIALS}
+  update_version_in_runai_operator:
+    steps:
+      - run:
+          name: Install tools
+          command: cd ~ && GO111MODULE=on go get github.com/mikefarah/yq/v4
+
+      - run:
+          name: Git Commands
+          command: |
+            export TAG=${CIRCLE_TAG/v/''}
+            echo "Updating mig-parted new version number $TAG in runai-operator..."
+            cd ~
+            git config --global -l
+            git config --global user.name "circleci-runai"
+            git config --global user.email "circleci@run.ai"
+            git clone https://github.com/run-ai/runai-operator.git
+            cd runai-operator/subcharts/mig-parted
+            echo $TAG
+            yq e -i '.image.tag = strenv(TAG)' values.yaml
+            git add values.yaml
+            git commit -m "updated mig-parted production version to $TAG [skip ci]"
+            git push
 jobs:      
   deploy-staging:
     working_directory: ~/runai
@@ -24,17 +46,19 @@ jobs:
     - docker_login:
         gcloud_auth_var_name: STAGING_GCLOUD_SERVICE_JSON_CONTENT
     - run:
-        name: Build And Deploy
+        name: Build And Push to google cloud staging registry with the commit tag
         command: cd deployments/gpu-operator && make
         environment:
           ENVIRONMENT: staging
           VERSION: <<pipeline.git.revision>>
     - run:
-        name: deploy
-        command: pwd
+        name: Push to google cloud staging registry with 'latest' tag
+        command: cd deployments/gpu-operator && make push-to-tag
         environment:
-          ENVRIONMENT: staging
-          VERSION: <<pipeline.git.revision>>
+          ENVIRONMENT: staging
+          OLD_TAG: <<pipeline.git.revision>>
+          NEW_TAG: latest
+
   deploy-production:
     working_directory: ~/runai
     docker:
@@ -45,17 +69,12 @@ jobs:
     - docker_login:
         gcloud_auth_var_name: PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT
     - run:
-        name: Build And Deploy
+        name: Build And Push to google cloud production registry
         command: cd deployments/gpu-operator && make
         environment:
           ENVIRONMENT: prod
           VERSION: <<pipeline.git.tag>>
-    - run:
-        name: deploy
-        command: echo x
-        environment:
-          ENVRIONMENT: prod
-          VERSION: <<pipeline.git.tag>>
+    - update_version_in_runai_operator
 
 workflows:
   version: 2  
