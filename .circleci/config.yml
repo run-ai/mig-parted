@@ -84,7 +84,7 @@ workflows:
           filters:
             branches:
               only:
-                - "gal/RUN-2662-add-tag-and-trigger-operator-update-version"
+                - master
       - deploy-production:
           filters:
                 tags:
