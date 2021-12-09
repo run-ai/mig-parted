@@ -47,17 +47,18 @@ jobs:
     - docker_login:
         gcloud_auth_var_name: STAGING_GCLOUD_SERVICE_JSON_CONTENT
     - run:
-        name: Build And Push to google cloud staging registry with revision tag
-        command: cd deployments/gpu-operator && make
-        environment:
-          ENVIRONMENT: staging
-          VERSION: <<pipeline.git.revision>>
-    - run:
-        name: Build And Push to google cloud staging registry with 'latest' tag
+        name: Build And Push to google cloud staging registry with latest tag
         command: cd deployments/gpu-operator && make
         environment:
           ENVIRONMENT: staging
           VERSION: latest
+    - run:
+        name: Push to google cloud staging registry with 'latest' tag
+        command: cd deployments/gpu-operator && make push-to-tag
+        environment:
+          ENVIRONMENT: staging
+          OLD_TAG: latest
+          NEW_TAG: <<pipeline.git.revision>>
 
   deploy-production:
     working_directory: ~/runai
@@ -84,7 +85,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - "gal/RUN-2662-add-tag-and-trigger-operator-update-version"
       - deploy-production:
           filters:
                 tags:
