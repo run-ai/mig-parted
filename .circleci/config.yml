@@ -53,7 +53,7 @@ jobs:
           ENVIRONMENT: staging
           VERSION: latest
     - run:
-        name: Push to google cloud staging registry with 'latest' tag
+        name: Push to google cloud staging registry with commit tag
         command: cd deployments/gpu-operator && make push-to-tag
         environment:
           ENVIRONMENT: staging

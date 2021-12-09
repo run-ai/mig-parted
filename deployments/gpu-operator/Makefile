@@ -58,5 +58,5 @@ $(BUILD_TARGETS): build-%:
 
 
 push-to-tag:
-	docker tag $(IMAGE):$(OLD_TAG) $(IMAGE):$(NEW_TAG)
-    docker push $(IMAGE):$(NEW_TAG)
+	$(DOCKER) tag $(IMAGE):$(OLD_TAG) $(IMAGE):$(NEW_TAG)
+	$(DOCKER) push $(IMAGE):$(NEW_TAG)
