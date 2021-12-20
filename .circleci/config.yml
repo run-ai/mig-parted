@@ -70,7 +70,8 @@ jobs:
         gcloud_auth_var_name: PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT
     - run:
         name: Build And Push to google cloud production registry
-        command: export VERSION=${VERSION/v/''} && cd deployments/gpu-operator && make
+        # command: export VERSION=${VERSION/v/''} && cd deployments/gpu-operator && make
+        command: cd deployments/gpu-operator && make
         environment:
           ENVIRONMENT: prod
           VERSION: <<pipeline.git.tag>>
