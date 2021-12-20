@@ -70,11 +70,11 @@ jobs:
         gcloud_auth_var_name: PRODUCTION_GCLOUD_SERVICE_JSON_CONTENT
     - run:
         name: Build And Push to google cloud production registry
-        command: cd deployments/gpu-operator && make
+        command: export VERSION=${VERSION/v/''} && cd deployments/gpu-operator && make
         environment:
           ENVIRONMENT: prod
           VERSION: <<pipeline.git.tag>>
-    - update_version_in_runai_operator
+    # - update_version_in_runai_operator
 
 workflows:
   version: 2  
@@ -90,5 +90,5 @@ workflows:
                 tags:
                   only: /^v.*/
                 branches:
-                  ignore: /.*/
+                  only: gal/fix-production-tag-issue
 
