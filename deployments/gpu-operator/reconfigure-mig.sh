@@ -6,7 +6,6 @@ NODE_NAME=""
 MIG_CONFIG_FILE=""
 
 NDP_ORIGINAL_STATE="true"
-GFD_ORIGINAL_STATE="true"
 DCGM_ORIGINAL_STATE="true"
 
 function usage() {
@@ -86,7 +85,6 @@ function exit_failed() {
 	kubectl label --overwrite \
 		node ${NODE_NAME} \
 		nvidia.com/gpu.deploy.device-plugin=${NDP_ORIGINAL_STATE} \
-		nvidia.com/gpu.deploy.gpu-feature-discovery=${GFD_ORIGINAL_STATE} \
 		nvidia.com/gpu.deploy.dcgm-exporter=${DCGM_ORIGINAL_STATE}
 		if [ "${?}" != "0" ]; then
 			echo "Unable to bring up GPU operator components by setting their daemonset labels"
@@ -97,11 +95,6 @@ function exit_failed() {
 NDP_ORIGINAL_STATE=$(kubectl get nodes ${NODE_NAME} -o=jsonpath='{$.metadata.labels.nvidia\.com/gpu\.deploy\.device-plugin}')
 if [ "${?}" != "0" ]; then
   echo "Unable to get the NVIDIA_DEVICE_PLUGIN state"
-	__set_state_and_exit "failed" 1
-fi
-GFD_ORIGINAL_STATE=$(kubectl get nodes ${NODE_NAME} -o=jsonpath='{$.metadata.labels.nvidia\.com/gpu\.deploy\.gpu-feature-discovery}')
-if [ "${?}" != "0" ]; then
-  echo "Unable to get the GPU_FEATURE_DISCOVERY state"
 	__set_state_and_exit "failed" 1
 fi
 DCGM_ORIGINAL_STATE=$(kubectl get nodes ${NODE_NAME} -o=jsonpath='{$.metadata.labels.nvidia\.com/gpu\.deploy\.dcgm-exporter}')
@@ -164,7 +157,6 @@ echo "Shutting down all GPU clients on the current node by disabling their compo
 kubectl label --overwrite \
 	node ${NODE_NAME} \
 	nvidia.com/gpu.deploy.device-plugin=false \
-	nvidia.com/gpu.deploy.gpu-feature-discovery=false \
 	nvidia.com/gpu.deploy.dcgm-exporter=false
 if [ "${?}" != "0" ]; then
 	echo "Unable to tear down GPU operator components by setting their daemonset labels"
@@ -177,13 +169,6 @@ kubectl wait --for=delete pod \
 	--field-selector "spec.nodeName=${NODE_NAME}" \
 	-n gpu-operator-resources \
 	-l app=nvidia-device-plugin-daemonset
-
-echo "Waiting for gpu-feature-discovery to shutdown"
-kubectl wait --for=delete pod \
-	--timeout=5m \
-	--field-selector "spec.nodeName=${NODE_NAME}" \
-	-n gpu-operator-resources \
-	-l app=gpu-feature-discovery
 
 echo "Waiting for dcgm-exporter to shutdown"
 kubectl wait --for=delete pod \
@@ -227,7 +212,6 @@ echo "Restarting all GPU clients previouly shutdown by reenabling their componen
 kubectl label --overwrite \
 	node ${NODE_NAME} \
 	nvidia.com/gpu.deploy.device-plugin=${NDP_ORIGINAL_STATE} \
-	nvidia.com/gpu.deploy.gpu-feature-discovery=${GFD_ORIGINAL_STATE} \
 	nvidia.com/gpu.deploy.dcgm-exporter=${DCGM_ORIGINAL_STATE}
 if [ "${?}" != "0" ]; then
 	echo "Unable to bring up GPU operator components by setting their daemonset labels"
