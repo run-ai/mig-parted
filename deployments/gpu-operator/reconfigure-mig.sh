@@ -5,6 +5,10 @@ HOST_ROOT_MOUNT="/host"
 NODE_NAME=""
 MIG_CONFIG_FILE=""
 
+NDP_ORIGINAL_STATE="true"
+GFD_ORIGINAL_STATE="true"
+DCGM_ORIGINAL_STATE="true"
+
 function usage() {
   echo "USAGE:"
   echo "    ${0} -h "
@@ -71,11 +75,40 @@ function exit_success() {
   echo ${MIG_DEVICES_UUID_MAP}
   kubectl annotate node ${NODE_NAME} --overwrite run.ai/mig-mapping=${MIG_DEVICES_UUID_MAP}
 	__set_state_and_exit "success" 0
+}	
+
+function exit_failed_no_restart_gpu_clients() {
+	__set_state_and_exit "failed" 1
 }
 
 function exit_failed() {
+	echo "Restarting all GPU clients previouly shutdown by reenabling their component-specific nodeSelector labels"
+	kubectl label --overwrite \
+		node ${NODE_NAME} \
+		nvidia.com/gpu.deploy.device-plugin=${NDP_ORIGINAL_STATE} \
+		nvidia.com/gpu.deploy.gpu-feature-discovery=${GFD_ORIGINAL_STATE} \
+		nvidia.com/gpu.deploy.dcgm-exporter=${DCGM_ORIGINAL_STATE}
+		if [ "${?}" != "0" ]; then
+			echo "Unable to bring up GPU operator components by setting their daemonset labels"
+		fi
 	__set_state_and_exit "failed" 1
 }
+
+NDP_ORIGINAL_STATE=$(kubectl get nodes ${NODE_NAME} -o=jsonpath='{$.metadata.labels.nvidia\.com/gpu\.deploy\.device-plugin}')
+if [ "${?}" != "0" ]; then
+  echo "Unable to get the NVIDIA_DEVICE_PLUGIN state"
+	__set_state_and_exit "failed" 1
+fi
+GFD_ORIGINAL_STATE=$(kubectl get nodes ${NODE_NAME} -o=jsonpath='{$.metadata.labels.nvidia\.com/gpu\.deploy\.gpu-feature-discovery}')
+if [ "${?}" != "0" ]; then
+  echo "Unable to get the GPU_FEATURE_DISCOVERY state"
+	__set_state_and_exit "failed" 1
+fi
+DCGM_ORIGINAL_STATE=$(kubectl get nodes ${NODE_NAME} -o=jsonpath='{$.metadata.labels.nvidia\.com/gpu\.deploy\.dcgm-exporter}')
+if [ "${?}" != "0" ]; then
+  echo "Unable to get the DCGM_EXPORTER state"
+	__set_state_and_exit "failed" 1
+fi
 
 echo "Asserting that the requested configuration is present in the configuration file"
 
@@ -127,6 +160,38 @@ if [ "${?}" != "0" ]; then
 	exit_failed
 fi
 
+echo "Shutting down all GPU clients on the current node by disabling their component-specific nodeSelector labels"
+kubectl label --overwrite \
+	node ${NODE_NAME} \
+	nvidia.com/gpu.deploy.device-plugin=false \
+	nvidia.com/gpu.deploy.gpu-feature-discovery=false \
+	nvidia.com/gpu.deploy.dcgm-exporter=false
+if [ "${?}" != "0" ]; then
+	echo "Unable to tear down GPU operator components by setting their daemonset labels"
+	exit_failed
+fi
+
+echo "Waiting for the device-plugin to shutdown"
+kubectl wait --for=delete pod \
+	--timeout=5m \
+	--field-selector "spec.nodeName=${NODE_NAME}" \
+	-n gpu-operator-resources \
+	-l app=nvidia-device-plugin-daemonset
+
+echo "Waiting for gpu-feature-discovery to shutdown"
+kubectl wait --for=delete pod \
+	--timeout=5m \
+	--field-selector "spec.nodeName=${NODE_NAME}" \
+	-n gpu-operator-resources \
+	-l app=gpu-feature-discovery
+
+echo "Waiting for dcgm-exporter to shutdown"
+kubectl wait --for=delete pod \
+	--timeout=5m \
+	--field-selector "spec.nodeName=${NODE_NAME}" \
+	-n gpu-operator-resources \
+	-l app=nvidia-dcgm-exporter
+
 echo "Applying the MIG mode change from the selected config to the node"
 echo "If the -r option was passed, the node will be automatically rebooted if this is not successful"
 
@@ -156,6 +221,17 @@ EOF
 
 if [ "${?}" != "0" ]; then
 	exit_failed
+fi
+
+echo "Restarting all GPU clients previouly shutdown by reenabling their component-specific nodeSelector labels"
+kubectl label --overwrite \
+	node ${NODE_NAME} \
+	nvidia.com/gpu.deploy.device-plugin=${NDP_ORIGINAL_STATE} \
+	nvidia.com/gpu.deploy.gpu-feature-discovery=${GFD_ORIGINAL_STATE} \
+	nvidia.com/gpu.deploy.dcgm-exporter=${DCGM_ORIGINAL_STATE}
+if [ "${?}" != "0" ]; then
+	echo "Unable to bring up GPU operator components by setting their daemonset labels"
+	exit_failed_no_restart_gpu_clients
 fi
 
 echo "Restarting validator pod to re-run all validations"
