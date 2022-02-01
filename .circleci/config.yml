@@ -39,7 +39,7 @@ jobs:
   deploy-staging:
     working_directory: ~/runai
     docker:
-    - image: circleci/golang:1.15
+    - image: circleci/golang:1.17
     steps:
     - checkout
     - setup_remote_docker
@@ -62,7 +62,7 @@ jobs:
   deploy-production:
     working_directory: ~/runai
     docker:
-    - image: circleci/golang:1.15
+    - image: circleci/golang:1.17
     steps:
     - checkout
     - setup_remote_docker
