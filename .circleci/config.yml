@@ -29,7 +29,7 @@ commands:
             git config --global user.name "circleci-runai"
             git config --global user.email "circleci@run.ai"
             git clone https://github.com/run-ai/runai-operator.git
-            cd runai-operator/subcharts/mig-parted
+            cd runai-operator/runai-operator/subcharts/mig-parted
             echo $TAG
             yq e -i '.image.tag = strenv(TAG)' values.yaml
             git add values.yaml
