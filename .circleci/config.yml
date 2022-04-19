@@ -33,7 +33,7 @@ commands:
             echo $TAG
             yq e -i '.image.tag = strenv(TAG)' values.yaml
             git add values.yaml
-            git commit -m "updated mig-parted production version to $TAG [skip ci]"
+            git commit -m "updated mig-parted production version to $TAG"
             git push
 jobs:      
   deploy-staging:
