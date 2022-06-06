@@ -36,6 +36,15 @@ commands:
             git commit -m "updated mig-parted production version to $TAG"
             git push
 jobs:      
+  deprecation:
+    docker:
+    - image: circleci/golang:1.17
+    steps:
+      - run:
+          name: deprecation notice
+          command: |
+            echo "This repository is undergoing a migration process, all PRs should be made against github.com/run-ai/runai-operator/mig-parted once migration is complete"
+            exit 1
   deploy-staging:
     working_directory: ~/runai
     docker:
@@ -80,6 +89,7 @@ workflows:
   version: 2  
   deploy:
     jobs:
+      - deprecation
       - deploy-staging:
           filters:
             branches:
